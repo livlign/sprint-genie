@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sprint Genie — Project Presentation</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0e0e0e;
+  --surface: #1a1a1a;
+  --surface2: #242424;
+  --border: #2e2e2e;
+  --text: #e8e6e0;
+  --text2: #9c9a92;
+  --text3: #6b6a64;
+  --accent: #f0997b;
+  --accent2: #5dcaa5;
+  --accent3: #afa9ec;
+  --accent4: #85b7eb;
+  --warn: #efc66a;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  height: 100vh;
+}
+
+.deck { position: relative; width: 100vw; height: 100vh; }
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 60px 80px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  pointer-events: none;
+  overflow-y: auto;
+}
+
+.slide.active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: all;
+}
+
+.slide-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 52px;
+  font-weight: 400;
+  line-height: 1.15;
+  margin-bottom: 32px;
+  letter-spacing: -0.5px;
+}
+
+.slide-title .highlight { color: var(--accent); }
+.slide-title .highlight2 { color: var(--accent2); }
+.slide-title .highlight3 { color: var(--accent3); }
+
+.slide-subtitle {
+  font-size: 20px;
+  font-weight: 300;
+  color: var(--text2);
+  line-height: 1.6;
+  max-width: 700px;
+}
+
+.tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+
+/* Cards grid */
+.cards { display: grid; gap: 16px; margin-top: 32px; }
+.cards-2 { grid-template-columns: 1fr 1fr; }
+.cards-3 { grid-template-columns: 1fr 1fr 1fr; }
+.cards-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+}
+
+.card-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.card-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+.card-desc { font-size: 14px; color: var(--text2); line-height: 1.6; }
+
+.label-coral { color: var(--accent); }
+.label-teal { color: var(--accent2); }
+.label-purple { color: var(--accent3); }
+.label-blue { color: var(--accent4); }
+.label-warn { color: var(--warn); }
+
+/* Flow diagram */
+.flow-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-top: 40px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.flow-step {
+  padding: 18px 24px;
+  border-radius: 14px;
+  text-align: center;
+  min-width: 170px;
+  position: relative;
+}
+
+.flow-step .step-num {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.flow-step .step-title { font-size: 16px; font-weight: 600; }
+.flow-step .step-desc { font-size: 12px; margin-top: 4px; opacity: 0.7; }
+
+.flow-arrow {
+  font-size: 20px;
+  color: var(--text3);
+  padding: 0 8px;
+  flex-shrink: 0;
+}
+
+.fs-teal { background: rgba(93,202,165,0.12); color: var(--accent2); }
+.fs-purple { background: rgba(175,169,236,0.12); color: var(--accent3); }
+.fs-coral { background: rgba(240,153,123,0.12); color: var(--accent); }
+.fs-blue { background: rgba(133,183,235,0.12); color: var(--accent4); }
+
+/* UI Mockup */
+.mockup-frame {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-top: 24px;
+  font-size: 12px;
+}
+
+.mock-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.mock-topbar-left { display: flex; align-items: center; gap: 8px; }
+.mock-topbar-right { display: flex; align-items: center; gap: 14px; color: var(--text2); font-size: 11px; }
+
+.mock-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.badge-info { background: rgba(133,183,235,0.15); color: var(--accent4); }
+.badge-success { background: rgba(93,202,165,0.15); color: var(--accent2); }
+.badge-warn { background: rgba(239,198,106,0.15); color: var(--warn); }
+.badge-type { background: rgba(133,183,235,0.15); color: var(--accent4); }
+
+.mock-split { display: flex; min-height: 360px; }
+
+.mock-left {
+  flex: 1;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.mock-right {
+  flex: 1;
+  background: rgba(255,255,255,0.02);
+  display: flex;
+  flex-direction: column;
+}
+
+.mock-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+
+.mock-tab {
+  padding: 8px 14px;
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.mock-tab.active { color: var(--accent4); border-bottom: 2px solid var(--accent4); font-weight: 500; }
+
+.mock-chat {
+  flex: 1;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.msg {
+  max-width: 82%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.msg-user {
+  align-self: flex-end;
+  background: rgba(133,183,235,0.12);
+  color: var(--text);
+  border-radius: 12px 12px 4px 12px;
+}
+
+.msg-ai {
+  align-self: flex-start;
+  background: var(--surface2);
+  color: var(--text);
+  border-radius: 12px 12px 12px 4px;
+}
+
+.msg-ai .msg-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text3);
+  margin-bottom: 4px;
+}
+
+.mock-input-bar {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.mock-input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text3);
+}
+
+.mock-btn-done {
+  background: rgba(93,202,165,0.15);
+  color: var(--accent2);
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mock-panel-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.mock-tickets {
+  flex: 1;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.mock-ticket {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.mock-ticket-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.mock-ticket-title { font-size: 12px; font-weight: 500; }
+.mock-ticket-desc { font-size: 11px; color: var(--text2); line-height: 1.5; }
+
+.mock-add-btn {
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  text-align: center;
+  color: var(--text3);
+  font-size: 11px;
+}
+
+.mock-submit-bar {
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mock-btn-save {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+}
+
+.mock-btn-create {
+  background: var(--accent4);
+  color: #0e0e0e;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Architecture diagram */
+.arch-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin: 16px 0;
+}
+
+.arch-box {
+  padding: 14px 20px;
+  border-radius: 12px;
+  text-align: center;
+  min-width: 150px;
+  border: 1px solid;
+}
+
+.arch-arrow {
+  font-size: 12px;
+  color: var(--text3);
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+.ab-react { background: rgba(133,183,235,0.08); border-color: rgba(133,183,235,0.25); }
+.ab-node { background: rgba(175,169,236,0.08); border-color: rgba(175,169,236,0.25); }
+.ab-claude { background: rgba(240,153,123,0.08); border-color: rgba(240,153,123,0.25); }
+.ab-jira { background: rgba(93,202,165,0.08); border-color: rgba(93,202,165,0.25); }
+
+.ab-react .arch-label { color: var(--accent4); }
+.ab-node .arch-label { color: var(--accent3); }
+.ab-claude .arch-label { color: var(--accent); }
+.ab-jira .arch-label { color: var(--accent2); }
+
+.arch-label { font-size: 13px; font-weight: 600; }
+.arch-sub { font-size: 10px; color: var(--text3); margin-top: 4px; }
+
+/* Table */
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  font-size: 13px;
+}
+
+.tbl th {
+  text-align: left;
+  padding: 10px 16px;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text3);
+  border-bottom: 1px solid var(--border);
+}
+
+.tbl td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text2);
+}
+
+.tbl td:first-child { color: var(--text); font-weight: 500; }
+
+/* Stat row */
+.stats { display: flex; gap: 16px; margin-top: 32px; }
+.stat-card {
+  flex: 1;
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+}
+
+.stat-num {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.stat-label { font-size: 12px; color: var(--text3); }
+.stat-coral .stat-num { color: var(--accent); }
+.stat-teal .stat-num { color: var(--accent2); }
+.stat-purple .stat-num { color: var(--accent3); }
+.stat-blue .stat-num { color: var(--accent4); }
+
+/* Bullet list */
+.blist { margin-top: 16px; }
+.blist li {
+  list-style: none;
+  padding: 8px 0;
+  font-size: 15px;
+  color: var(--text2);
+  line-height: 1.5;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.blist li::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
+/* Navigation */
+.nav {
+  position: fixed;
+  bottom: 28px;
+  right: 40px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 100;
+}
+
+.nav-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.nav-btn:hover { background: var(--surface2); border-color: var(--text3); }
+.nav-btn:active { transform: scale(0.95); }
+
+.nav-counter {
+  font-size: 12px;
+  color: var(--text3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Progress bar */
+.progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: var(--accent);
+  transition: width 0.4s ease;
+  z-index: 100;
+}
+
+/* Phase timeline */
+.timeline { margin-top: 28px; }
+.tl-item {
+  display: flex;
+  gap: 16px;
+  padding: 14px 0;
+  align-items: flex-start;
+}
+
+.tl-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.tl-line {
+  width: 2px;
+  background: var(--border);
+  flex-shrink: 0;
+  margin: 0 5px;
+}
+
+.tl-content { flex: 1; }
+.tl-phase { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.tl-desc { font-size: 13px; color: var(--text2); line-height: 1.5; }
+.tl-time { font-size: 12px; color: var(--text3); margin-top: 4px; }
+
+.dot-coral { background: var(--accent); }
+.dot-teal { background: var(--accent2); }
+.dot-purple { background: var(--accent3); }
+.dot-blue { background: var(--accent4); }
+.dot-warn { background: var(--warn); }
+
+/* Two column layout */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 24px; }
+
+/* Fade-in children */
+.slide.active .fade-in { animation: fadeUp 0.5s ease forwards; opacity: 0; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.delay-1 { animation-delay: 0.1s !important; }
+.delay-2 { animation-delay: 0.2s !important; }
+.delay-3 { animation-delay: 0.3s !important; }
+.delay-4 { animation-delay: 0.4s !important; }
+.delay-5 { animation-delay: 0.5s !important; }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<div class="deck" id="deck">
+
+<!-- SLIDE 1: Title -->
+<div class="slide" data-slide="0">
+  <div class="fade-in">
+    <div class="tag">Project Proposal</div>
+    <div class="slide-title">Sprint <span class="highlight">Genie</span></div>
+    <div class="slide-subtitle">AI-powered sprint planning assistant — turn rough ideas into structured Jira epics and tickets through an interactive grooming session with Claude.</div>
+    <div style="margin-top: 32px; display: flex; gap: 12px; align-items: center;">
+      <span style="font-size: 13px; color: var(--text3);">v1.0</span>
+      <span style="font-size: 13px; color: var(--text3);">March 2026</span>
+      <span style="font-size: 13px; color: var(--text3);">Status: Design &amp; Planning</span>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 2: The Problem -->
+<div class="slide" data-slide="1">
+  <div class="tag fade-in">The Problem</div>
+  <div class="slide-title fade-in delay-1">Sprint planning is a <span class="highlight">time sink</span></div>
+  <div class="slide-subtitle fade-in delay-2">As a Tech Lead, creating epics and tickets for each sprint is repetitive and manual. The same process repeats every sprint, multiple times.</div>
+  <div class="stats fade-in delay-3">
+    <div class="stat-card stat-coral"><div class="stat-num">45+</div><div class="stat-label">Minutes per feature</div></div>
+    <div class="stat-card stat-purple"><div class="stat-num">4-6</div><div class="stat-label">Features per sprint</div></div>
+    <div class="stat-card stat-teal"><div class="stat-num">3-5</div><div class="stat-label">Hours lost per sprint</div></div>
+    <div class="stat-card stat-blue"><div class="stat-num">26</div><div class="stat-label">Sprints per year</div></div>
+  </div>
+  <ul class="blist fade-in delay-4">
+    <li>Take a raw idea, PRD, or conversation and break it into requirements</li>
+    <li>Structure as an Epic with child tickets, each with proper descriptions</li>
+    <li>Manually add prefix, sprint assignment, linking in Jira</li>
+    <li>Repeat for every feature, every sprint</li>
+  </ul>
+</div>
+
+<!-- SLIDE 3: Solution Overview -->
+<div class="slide" data-slide="2">
+  <div class="tag fade-in">The Solution</div>
+  <div class="slide-title fade-in delay-1">From <span class="highlight2">rough idea</span> to <span class="highlight2">Jira tickets</span> in minutes</div>
+  <div class="slide-subtitle fade-in delay-2">Sprint Genie automates the full workflow — input, grooming, editing, and submission — in one local webapp.</div>
+  <div class="flow-row fade-in delay-3">
+    <div class="flow-step fs-teal">
+      <div class="step-num">Step 1</div>
+      <div class="step-title">Input</div>
+      <div class="step-desc">Text, .md, or CPD ticket</div>
+    </div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-step fs-purple">
+      <div class="step-num">Step 2</div>
+      <div class="step-title">AI Grooming</div>
+      <div class="step-desc">Chat with Claude</div>
+    </div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-step fs-coral">
+      <div class="step-num">Step 3</div>
+      <div class="step-title">Ticket Builder</div>
+      <div class="step-desc">Edit epic + tickets</div>
+    </div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-step fs-blue">
+      <div class="step-num">Step 4</div>
+      <div class="step-title">Submit to Jira</div>
+      <div class="step-desc">One click, fully linked</div>
+    </div>
+  </div>
+  <div class="cards cards-4 fade-in delay-4" style="margin-top: 28px;">
+    <div class="card"><div class="card-label label-teal">Input sources</div><div class="card-desc">Free text, paste markdown, upload .md file, or pull a CPD discovery ticket directly from Jira</div></div>
+    <div class="card"><div class="card-label label-purple">Smart grooming</div><div class="card-desc">Claude adapts to the work type: feature, bug, refactor, or investigation. Browses your local source code for context-aware solution design</div></div>
+    <div class="card"><div class="card-label label-coral">Full control</div><div class="card-desc">Inline-edit every field: titles, descriptions, issue types, prefix, sprint. Add or remove tickets freely</div></div>
+    <div class="card"><div class="card-label label-blue">Direct to Jira</div><div class="card-desc">Creates Epic first, then child tickets linked as children, all assigned to the target sprint</div></div>
+  </div>
+</div>
+
+<!-- SLIDE 4: UI Mockup -->
+<div class="slide" data-slide="3">
+  <div class="tag fade-in">UI Design</div>
+  <div class="slide-title fade-in delay-1" style="font-size: 38px;">Split-panel <span class="highlight3">interactive</span> layout</div>
+  <div class="mockup-frame fade-in delay-2">
+    <div class="mock-topbar">
+      <div class="mock-topbar-left">
+        <span style="font-weight: 600; font-size: 14px;">Sprint Genie</span>
+        <span class="mock-badge badge-info">v1</span>
+      </div>
+      <div class="mock-topbar-right">
+        <span>Project: <strong style="color: var(--text);">LH</strong></span>
+        <span>Prefix: <strong style="color: var(--text);">[API-2]</strong></span>
+        <span>Sprint: <strong style="color: var(--text);">200</strong></span>
+        <span class="mock-badge badge-success">Jira connected</span>
+      </div>
+    </div>
+    <div class="mock-split">
+      <div class="mock-left">
+        <div class="mock-tabs">
+          <div class="mock-tab active">Free text</div>
+          <div class="mock-tab">Paste / .md</div>
+          <div class="mock-tab">CPD ticket</div>
+        </div>
+        <div class="mock-chat">
+          <div class="msg msg-user">We need to build a data source attribute-based filtering feature for ProductHub. Users should be able to set filter criteria on data source attributes so only matching products sync.</div>
+          <div class="msg msg-ai">
+            <div class="msg-label">Claude</div>
+            Got it. Let me break this down:<br><br>
+            1. Should filters apply per-data-source or globally?<br>
+            2. When filters change, should existing products resync?<br>
+            3. Standard attributes only, or custom properties too?
+          </div>
+          <div class="msg msg-user">Per data source. Updated filters trigger resync. Both standard and custom attributes.</div>
+          <div class="msg msg-ai">
+            <div class="msg-label">Claude</div>
+            <strong>Requirements captured:</strong><br>
+            &bull; CRUD filter criteria per data source<br>
+            &bull; Support standard + custom attributes<br>
+            &bull; Resync triggered on filter update<br><br>
+            Shall I generate the epic and tickets?
+          </div>
+        </div>
+        <div class="mock-input-bar">
+          <div class="mock-input">Type your response...</div>
+          <div class="mock-btn-done">Done, generate tickets</div>
+        </div>
+      </div>
+      <div class="mock-right">
+        <div class="mock-panel-header">
+          <span>Epic &amp; tickets</span>
+          <span style="font-size: 11px; color: var(--text3);">3 tickets</span>
+        </div>
+        <div class="mock-tickets">
+          <div class="mock-ticket" style="border-color: rgba(239,198,106,0.3);">
+            <div class="mock-ticket-header"><span class="mock-badge badge-warn">Epic</span><span style="font-size: 10px; color: var(--text3);">LH</span></div>
+            <div class="mock-ticket-title">[API-2] CPD-1198 Product Hub: DS Attribute-Based Filtering</div>
+            <div class="mock-ticket-desc">Enable per-data-source attribute filtering so only matching products sync to ProductHub.</div>
+          </div>
+          <div class="mock-ticket">
+            <div class="mock-ticket-header"><span class="mock-badge badge-type">Story</span><span style="font-size: 10px; color: var(--text3);">#1</span></div>
+            <div class="mock-ticket-title">[API-2] CRUD criteria settings</div>
+            <div class="mock-ticket-desc"><strong>Problem:</strong> No way to define filter rules per DS.<br><strong>Expected:</strong> API endpoints for create, read, update, delete filter criteria.</div>
+          </div>
+          <div class="mock-ticket">
+            <div class="mock-ticket-header"><span class="mock-badge badge-type">Story</span><span style="font-size: 10px; color: var(--text3);">#2</span></div>
+            <div class="mock-ticket-title">[API-2] Include filter in DS request</div>
+            <div class="mock-ticket-desc"><strong>Problem:</strong> DS requests don't include criteria.<br><strong>Expected:</strong> Filter settings attached to sync request payload.</div>
+          </div>
+          <div class="mock-ticket">
+            <div class="mock-ticket-header"><span class="mock-badge badge-type">Story</span><span style="font-size: 10px; color: var(--text3);">#3</span></div>
+            <div class="mock-ticket-title">[API-2] Resync on filter update</div>
+            <div class="mock-ticket-desc"><strong>Problem:</strong> Changed filters don't re-evaluate products.<br><strong>Expected:</strong> Filter update triggers resync automatically.</div>
+          </div>
+          <div class="mock-add-btn">+ Add ticket</div>
+        </div>
+        <div class="mock-submit-bar">
+          <div class="mock-btn-save">Save draft</div>
+          <div class="mock-btn-create">Create in Jira</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5: ADR Summary -->
+<div class="slide" data-slide="5">
+  <div class="tag fade-in">Architecture Decision Records</div>
+  <div class="slide-title fade-in delay-1" style="font-size: 38px;">Five decisions that <span class="highlight3">shape the build</span></div>
+  <div class="cards cards-2 fade-in delay-2">
+    <div class="card">
+      <div class="card-label label-blue">ADR-001: Tech Stack</div>
+      <div class="card-title">React + Express + TypeScript</div>
+      <div class="card-desc">Single language across the stack. Vite for fast dev, Tailwind for styling. Rejected Next.js (overkill), Python backend (two languages), vanilla JS (hard to maintain).</div>
+    </div>
+    <div class="card">
+      <div class="card-label label-coral">ADR-002: AI Integration</div>
+      <div class="card-title">Claude Messages API + SSE streaming</div>
+      <div class="card-desc">Backend proxies API calls, streams responses via Server-Sent Events. System prompt adapts to work type. "Done" triggers structured JSON output for the ticket builder.</div>
+    </div>
+    <div class="card">
+      <div class="card-label label-teal">ADR-003: Jira Integration</div>
+      <div class="card-title">REST API v3 + API token auth</div>
+      <div class="card-desc">No OAuth for v1 — API token is simpler for a single-user local tool. Creates Epic first, then links child tickets. Exponential backoff for rate limits.</div>
+    </div>
+    <div class="card">
+      <div class="card-label label-purple">ADR-004: Data Persistence</div>
+      <div class="card-title">Browser LocalStorage for drafts</div>
+      <div class="card-desc">Auto-save every 5 seconds. Session list with resume capability. JSON export for backup. ~5MB limit is sufficient. Migration path to SQLite if needed.</div>
+    </div>
+  </div>
+  <div class="cards cards-2 fade-in delay-3" style="margin-top: 16px;">
+    <div class="card">
+      <div class="card-label label-warn">ADR-005: Code Browsing</div>
+      <div class="card-title">Local filesystem for v1, Bitbucket for v2</div>
+      <div class="card-desc">During grooming, Claude browses local source code (directory tree, file read, grep search) to ground solution design in reality. .gitignore-aware, path-safe. Bitbucket API in v2 for remote access.</div>
+    </div>
+    <div class="card" style="border-color: transparent; background: transparent;"></div>
+  </div>
+</div>
+
+<!-- SLIDE 6: Closing -->
+<div class="slide" data-slide="5">
+  <div class="fade-in">
+    <div class="tag">Summary</div>
+    <div class="slide-title">Sprint planning, <span class="highlight2">reimagined</span></div>
+    <div class="slide-subtitle" style="max-width: 680px;">Sprint Genie turns a 45-minute manual process into a 10-minute AI-assisted workflow — fully local, fully in your control, and wired directly into Jira.</div>
+    <div class="cards cards-4 fade-in delay-1" style="margin-top: 36px;">
+      <div class="card" style="text-align: center;">
+        <div style="font-size: 34px; font-weight: 700; color: var(--accent);">10 min</div>
+        <div style="font-size: 12px; color: var(--text3); margin-top: 6px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">vs 45+ min today</div>
+        <div style="font-size: 13px; color: var(--text2); margin-top: 8px;">From rough idea to full Epic in Jira</div>
+      </div>
+      <div class="card" style="text-align: center;">
+        <div style="font-size: 34px; font-weight: 700; color: var(--accent2);">1-click</div>
+        <div style="font-size: 12px; color: var(--text3); margin-top: 6px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">Jira submission</div>
+        <div style="font-size: 13px; color: var(--text2); margin-top: 8px;">Epic + tickets created, linked, sprint-assigned</div>
+      </div>
+      <div class="card" style="text-align: center;">
+        <div style="font-size: 34px; font-weight: 700; color: var(--accent3);">Code-aware</div>
+        <div style="font-size: 12px; color: var(--text3); margin-top: 6px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">Grooming</div>
+        <div style="font-size: 13px; color: var(--text2); margin-top: 8px;">Claude browses your codebase during the session</div>
+      </div>
+      <div class="card" style="text-align: center;">
+        <div style="font-size: 34px; font-weight: 700; color: var(--accent4);">0</div>
+        <div style="font-size: 12px; color: var(--text3); margin-top: 6px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">Cloud infra</div>
+        <div style="font-size: 13px; color: var(--text2); margin-top: 8px;">Runs locally, API keys never leave your machine</div>
+      </div>
+    </div>
+    <div class="two-col fade-in delay-2" style="margin-top: 32px; gap: 32px;">
+      <div>
+        <div style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text);">What's in v1</div>
+        <ul class="blist" style="margin-top: 0;">
+          <li>Free text, markdown, and CPD ticket input modes</li>
+          <li>Interactive AI grooming with streaming chat</li>
+          <li>Inline-editable ticket builder (Epic + child tickets)</li>
+          <li>One-click Jira creation with full linking and sprint assignment</li>
+        </ul>
+      </div>
+      <div>
+        <div style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text);">Open questions</div>
+        <ul class="blist" style="margin-top: 0;">
+          <li>Edit existing Jira tickets, or create-only for v1?</li>
+          <li>Template system for recurring ticket structures?</li>
+          <li>Bidirectional link from Epic back to CPD ticket?</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- Navigation -->
+<div class="nav">
+  <div class="nav-counter"><span id="cur">1</span> / <span id="tot">8</span></div>
+  <button class="nav-btn" id="prev">&#8592;</button>
+  <button class="nav-btn" id="next">&#8594;</button>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+let current = 0;
+
+document.getElementById('tot').textContent = total;
+
+function show(n) {
+  current = Math.max(0, Math.min(total - 1, n));
+  slides.forEach((s, i) => s.classList.toggle('active', i === current));
+  document.getElementById('cur').textContent = current + 1;
+  document.getElementById('progress').style.width = ((current + 1) / total * 100) + '%';
+}
+
+document.getElementById('prev').onclick = () => show(current - 1);
+document.getElementById('next').onclick = () => show(current + 1);
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); show(current + 1); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); show(current - 1); }
+  if (e.key === 'Home') { e.preventDefault(); show(0); }
+  if (e.key === 'End') { e.preventDefault(); show(total - 1); }
+});
+
+show(0);
+</script>
+
+</body>
+</html>
