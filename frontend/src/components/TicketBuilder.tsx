@@ -16,6 +16,7 @@ interface TicketBuilderProps {
   onRemoveTicket: (id: string) => void
   onSubmit: () => void
   onSaveDraft: () => void
+  onExport?: () => void
 }
 
 export default function TicketBuilder({
@@ -31,6 +32,7 @@ export default function TicketBuilder({
   onRemoveTicket,
   onSubmit,
   onSaveDraft,
+  onExport,
 }: TicketBuilderProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
@@ -75,35 +77,49 @@ export default function TicketBuilder({
       <div className="flex-1 overflow-y-auto">
         {/* Epic row */}
         <div style={{ background: 'rgba(232,196,94,0.04)' }}>
-          <div
-            className="flex items-center gap-3 px-5 py-3 cursor-pointer"
-            style={{ borderBottom: '1px solid var(--border)' }}
-            onClick={() => toggle('epic')}
-          >
-            <TypeBadge type="Epic" />
-            <InlineEdit
-              value={epic.title}
-              onChange={v => onEpicChange({ title: v })}
-              placeholder="Epic title..."
-              className="flex-1 text-sm font-semibold"
-            />
-            <SprintSelect value={epic.sprintId} sprints={sprints} onChange={id => onEpicChange({ sprintId: id })} />
-            <RowMenu
-              expanded={expandedId === 'epic'}
-              onToggleDesc={() => toggle('epic')}
-            />
-          </div>
-          {expandedId === 'epic' && (
-            <div className="px-5 py-3 animate-fade-in" style={{ borderBottom: '1px solid var(--border)', paddingLeft: '80px' }}>
-              <InlineEdit
-                value={epic.description}
-                onChange={v => onEpicChange({ description: v })}
-                placeholder="Epic description..."
-                multiline
-                className="text-xs"
-                style={{ color: 'var(--text2)' }}
-              />
+          {epic.existingEpicKey ? (
+            /* Existing epic — read-only display */
+            <div
+              className="flex items-center gap-3 px-5 py-3"
+              style={{ borderBottom: '1px solid var(--border)' }}
+            >
+              <TypeBadge type="Epic" />
+              <span className="text-sm font-semibold shrink-0" style={{ color: 'var(--warn)' }}>{epic.existingEpicKey}</span>
+              <span className="text-sm truncate" style={{ color: 'var(--text2)' }}>{epic.title}</span>
             </div>
+          ) : (
+            <>
+              <div
+                className="flex items-center gap-3 px-5 py-3 cursor-pointer"
+                style={{ borderBottom: '1px solid var(--border)' }}
+                onClick={() => toggle('epic')}
+              >
+                <TypeBadge type="Epic" />
+                <InlineEdit
+                  value={epic.title}
+                  onChange={v => onEpicChange({ title: v })}
+                  placeholder="Epic title..."
+                  className="flex-1 text-sm font-semibold"
+                />
+                <SprintSelect value={epic.sprintId} sprints={sprints} onChange={id => onEpicChange({ sprintId: id })} />
+                <RowMenu
+                  expanded={expandedId === 'epic'}
+                  onToggleDesc={() => toggle('epic')}
+                />
+              </div>
+              {expandedId === 'epic' && (
+                <div className="px-5 py-3 animate-fade-in" style={{ borderBottom: '1px solid var(--border)', paddingLeft: '80px' }}>
+                  <InlineEdit
+                    value={epic.description}
+                    onChange={v => onEpicChange({ description: v })}
+                    placeholder="Epic description..."
+                    multiline
+                    className="text-xs"
+                    style={{ color: 'var(--text2)' }}
+                  />
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -147,6 +163,23 @@ export default function TicketBuilder({
         >
           Save draft
         </button>
+        {onExport && (
+          <button
+            onClick={onExport}
+            title="Export as Claude Code task file (.md)"
+            className="px-3 py-2.5 rounded-xl text-sm font-medium transition-colors shrink-0 flex items-center gap-1.5"
+            style={{ border: '1px solid var(--border)', color: 'var(--accent4)', background: 'transparent', lineHeight: 1.6 }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--glow-accent)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          >
+            {/* Claude Code icon — simple terminal-ish mark */}
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+              <rect x="1" y="1" width="12" height="12" rx="2.5" stroke="currentColor" strokeWidth="1.2"/>
+              <path d="M4 5l2 2-2 2M7.5 9h2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Export
+          </button>
+        )}
         <button
           onClick={onSubmit}
           disabled={submitting}

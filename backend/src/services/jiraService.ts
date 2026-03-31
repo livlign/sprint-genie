@@ -178,6 +178,60 @@ export async function getSprints(projectKey: string): Promise<JiraSprint[]> {
   })
 }
 
+// ─── Search epics ────────────────────────────────────────────────────────────
+
+export async function searchEpics(
+  projectKey: string,
+  query: string,
+): Promise<{ key: string; summary: string }[]> {
+  const trimmed = query.trim()
+
+  // Resolve a key to look up directly:
+  //   "LH-49192" → direct key
+  //   "49192"    → prepend projectKey → "LH-49192"
+  const isFullKey = /^[A-Z]+-\d+$/i.test(trimmed)
+  const isNumber = /^\d+$/.test(trimmed)
+  const lookupKey = isFullKey ? trimmed : isNumber ? `${projectKey}-${trimmed}` : null
+
+  if (lookupKey) {
+    // Direct lookup by key — fetch the issue and verify it's an Epic
+    try {
+      const data = await jiraFetch<{ key: string; fields: { summary: string; issuetype: { name: string } } }>(
+        `/issue/${lookupKey}?fields=summary,issuetype`,
+      )
+      if (data.fields.issuetype.name === 'Epic') {
+        return [{ key: data.key, summary: data.fields.summary }]
+      }
+    } catch {
+      // not found — fall through to title search
+    }
+  }
+
+  // Search for epics matching the query text
+  const jql = query
+    ? `project = "${projectKey}" AND issuetype = Epic AND summary ~ "${query.replace(/"/g, '\\"')}" ORDER BY updated DESC`
+    : `project = "${projectKey}" AND issuetype = Epic ORDER BY updated DESC`
+
+  const keys = await jqlSearchKeys(jql, 20)
+  if (keys.length === 0) return []
+
+  // Fetch summaries for each epic
+  const results: { key: string; summary: string }[] = []
+  await Promise.all(keys.map(async (id) => {
+    try {
+      const data = await jiraFetch<{ key: string; fields: { summary: string } }>(
+        `/issue/${id}?fields=summary`,
+      )
+      results.push({ key: data.key, summary: data.fields.summary })
+    } catch {
+      // skip issues that fail to fetch
+    }
+  }))
+
+  // Sort by key descending (newest first)
+  return results.sort((a, b) => b.key.localeCompare(a.key))
+}
+
 // ─── Fetch issue (for CPD input) ──────────────────────────────────────────────
 
 export async function getIssue(rawKey: string): Promise<{ key: string; summary: string; description: string }> {

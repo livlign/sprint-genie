@@ -5,11 +5,13 @@ import { useChat, generateTickets } from './hooks/useChat'
 import { useJiraProjects, useJiraSprints } from './hooks/useJira'
 import TopBar from './components/TopBar'
 import ChatPanel from './components/ChatPanel'
+import EpicChoicePanel from './components/EpicChoicePanel'
 import TicketBuilder from './components/TicketBuilder'
 import SubmitResult from './components/SubmitResult'
 import SettingsModal from './components/SettingsModal'
 import SessionList from './components/SessionList'
 import { ToastProvider, useToast } from './components/Toast'
+import { exportForClaudeCode } from './lib/exportMarkdown'
 import type { CreateJiraRequest, IssueType } from 'sprint-genie-shared'
 
 export default function App() {
@@ -23,6 +25,7 @@ export default function App() {
 function AppInner() {
   const { config, status, loading: configLoading, saving, saveConfig, refetch: refetchConfig } = useConfig()
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [choosingEpic, setChoosingEpic] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -72,22 +75,38 @@ function AppInner() {
     await chat.sendMessage(message, state.conversation, state.settings)
   }, [addMessage, chat, setStatus, state.conversation, state.settings])
 
-  // ── Done: generate tickets ───────────────────────────────────────────────
+  // ── Done: generate tickets, then show epic choice ────────────────────────
 
   const handleDone = useCallback(async () => {
     setGenerating(true)
     try {
       const result = await generateTickets(state.conversation, state.settings)
+      // Store generated epic + tickets, but don't enter building yet — show epic choice first
       setEpic({ ...result.epic, sprintId: state.settings.sprintId })
       setTickets(result.tickets.map(t => ({ ...t, type: t.type as IssueType, sprintId: state.settings.sprintId })))
-      setStatus('building')
+      setChoosingEpic(true)
       toast('Tickets generated', 'success')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to generate tickets')
     } finally {
       setGenerating(false)
     }
-  }, [state.conversation, state.settings, setEpic, setTickets, setStatus, setError, toast])
+  }, [state.conversation, state.settings, setEpic, setTickets, setError, toast])
+
+  // ── Epic choice: create new (use the AI-generated epic as-is) ───────────
+
+  const handleCreateNewEpic = useCallback(() => {
+    setChoosingEpic(false)
+    setStatus('building')
+  }, [setStatus])
+
+  // ── Epic choice: use existing (swap the epic, keep generated tickets) ───
+
+  const handleUseExistingEpic = useCallback((epicKey: string, epicSummary: string) => {
+    setChoosingEpic(false)
+    updateEpic({ title: epicSummary, description: '', existingEpicKey: epicKey })
+    setStatus('building')
+  }, [updateEpic, setStatus])
 
   // ── Import markdown as tickets (no AI) ──────────────────────────────────
 
@@ -158,9 +177,9 @@ function AppInner() {
       sprintId: state.settings.sprintId,
     })
     setTickets(tickets)
-    setStatus('building')
+    setChoosingEpic(true)
     toast(`Imported ${tickets.length} ticket${tickets.length !== 1 ? 's' : ''}`, 'success')
-  }, [state.settings, setEpic, setTickets, setStatus, toast])
+  }, [state.settings, setEpic, setTickets, toast])
 
   // ── Submit to Jira ───────────────────────────────────────────────────────
 
@@ -198,6 +217,7 @@ function AppInner() {
         epicKey: data.epicKey,
         epicUrl: data.epicUrl,
         tickets: data.tickets ?? [],
+        existingEpic: data.existingEpic ?? false,
       })
       toast('Created in Jira!', 'success')
     } catch (e) {
@@ -215,6 +235,20 @@ function AppInner() {
     toast('Draft saved', 'success')
   }, [forceSave, toast])
 
+  // ── Export for Claude Code ───────────────────────────────────────────────
+
+  const handleExport = useCallback(() => {
+    if (!state.epic) return
+    exportForClaudeCode({
+      epic: state.epic,
+      tickets: state.tickets,
+      prefix: state.settings.prefix,
+      project: state.settings.project,
+      result: state.result,   // includes Jira keys/URLs if already submitted
+    })
+    toast('Task file downloaded', 'success')
+  }, [state.epic, state.tickets, state.settings, state.result, toast])
+
   // ── Session list handlers ────────────────────────────────────────────────
 
   const handleResumeSession = useCallback((id: string) => {
@@ -225,6 +259,7 @@ function AppInner() {
 
   const handleNewSession = useCallback(() => {
     reset()
+    setChoosingEpic(false)
     setShowSessionList(false)
   }, [reset])
 
@@ -350,10 +385,16 @@ function AppInner() {
           <div className="absolute inset-y-0 -left-px w-[3px]" style={{ background: 'linear-gradient(to bottom, transparent, var(--glow-accent), transparent)' }} />
         </div>
 
-        {/* Right - Ticket builder or result */}
+        {/* Right - Epic choice, Ticket builder, or result */}
         <div className="flex flex-col flex-1 overflow-hidden">
           {state.status === 'submitted' && state.result ? (
-            <SubmitResult result={state.result} onNewSession={reset} />
+            <SubmitResult result={state.result} onNewSession={reset} onExport={state.epic ? handleExport : undefined} />
+          ) : choosingEpic ? (
+            <EpicChoicePanel
+              projectKey={state.settings.project}
+              onCreateNew={handleCreateNewEpic}
+              onUseExisting={handleUseExistingEpic}
+            />
           ) : (
             <TicketBuilder
               epic={state.epic}
@@ -368,6 +409,7 @@ function AppInner() {
               onRemoveTicket={removeTicket}
               onSubmit={handleSubmit}
               onSaveDraft={handleSaveDraft}
+              onExport={state.epic ? handleExport : undefined}
             />
           )}
         </div>

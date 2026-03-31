@@ -9,6 +9,7 @@ export interface SubmissionResult {
   epicKey: string
   epicUrl: string
   tickets: { key: string; url: string; summary: string }[]
+  existingEpic?: boolean
 }
 
 export interface SessionState {

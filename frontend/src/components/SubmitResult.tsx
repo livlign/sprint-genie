@@ -3,10 +3,11 @@ import type { SubmissionResult } from '../hooks/useSession'
 interface SubmitResultProps {
   result: SubmissionResult
   onNewSession: () => void
+  onExport?: () => void
 }
 
-export default function SubmitResult({ result, onNewSession }: SubmitResultProps) {
-  const totalIssues = result.tickets.length + 1
+export default function SubmitResult({ result, onNewSession, onExport }: SubmitResultProps) {
+  const totalIssues = result.existingEpic ? result.tickets.length : result.tickets.length + 1
 
   return (
     <div className="flex flex-col h-full items-center justify-center p-8 text-center animate-fade-in">
@@ -32,10 +33,13 @@ export default function SubmitResult({ result, onNewSession }: SubmitResultProps
       </div>
 
       <div className="font-display text-xl font-semibold mb-1" style={{ color: 'var(--text)' }}>
-        Created in Jira
+        {result.existingEpic ? 'Added to Epic' : 'Created in Jira'}
       </div>
       <div className="text-sm mb-8" style={{ color: 'var(--text2)' }}>
-        {totalIssues} issue{totalIssues !== 1 ? 's' : ''} created successfully
+        {result.existingEpic
+          ? `${result.tickets.length} ticket${result.tickets.length !== 1 ? 's' : ''} added to ${result.epicKey}`
+          : `${totalIssues} issue${totalIssues !== 1 ? 's' : ''} created successfully`
+        }
       </div>
 
       {/* Epic link */}
@@ -93,18 +97,36 @@ export default function SubmitResult({ result, onNewSession }: SubmitResultProps
         ))}
       </div>
 
-      <button
-        onClick={onNewSession}
-        className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2"
-        style={{ border: '1px solid var(--border)', color: 'var(--text2)', background: 'transparent' }}
-        onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2)'; e.currentTarget.style.borderColor = 'var(--border-hover)' }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--border)' }}
-      >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path d="M11 7H3M6 4L3 7l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-        Start new session
-      </button>
+      <div className="flex items-center gap-2">
+        {onExport && (
+          <button
+            onClick={onExport}
+            title="Export as Claude Code task file (.md)"
+            className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2"
+            style={{ border: '1px solid rgba(106,173,235,0.25)', color: 'var(--accent4)', background: 'var(--glow-accent)' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(106,173,235,0.45)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(106,173,235,0.25)' }}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+              <rect x="1" y="1" width="12" height="12" rx="2.5" stroke="currentColor" strokeWidth="1.2"/>
+              <path d="M4 5l2 2-2 2M7.5 9h2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Export for Claude Code
+          </button>
+        )}
+        <button
+          onClick={onNewSession}
+          className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2"
+          style={{ border: '1px solid var(--border)', color: 'var(--text2)', background: 'transparent' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2)'; e.currentTarget.style.borderColor = 'var(--border-hover)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--border)' }}
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M11 7H3M6 4L3 7l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Start new session
+        </button>
+      </div>
     </div>
   )
 }

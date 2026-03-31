@@ -126,6 +126,20 @@ router.get('/sprints', async (req, res) => {
   }
 })
 
+// GET /api/jira/epics?projectKey=LH&q=search+term
+router.get('/epics', async (req, res) => {
+  const { projectKey, q } = req.query
+  if (!projectKey || typeof projectKey !== 'string') {
+    return res.status(400).json({ error: 'projectKey query param required' })
+  }
+  try {
+    const epics = await jira.searchEpics(projectKey, (q as string) ?? '')
+    res.json(epics)
+  } catch (e) {
+    res.status(400).json({ error: (e as Error).message })
+  }
+})
+
 // GET /api/jira/issue/:key — fetch a CPD ticket
 router.get('/issue/:key', async (req, res) => {
   try {
@@ -149,42 +163,58 @@ router.post('/create', async (req, res) => {
   let epicKey = ''
 
   try {
-    // 1. Create Epic
-    const epicResult = await jira.createEpic(settings.project, epic.title, epic.description)
-    epicKey = epicResult.key
-
-    // Resolve the Jira browse base URL
-    // For Basic auth: use jiraBaseUrl from config
-    // For OAuth: extract from the `self` URL returned by the API
     let jiraBase = jira.getJiraBaseUrl()
-    if (!jiraBase && epicResult.self) {
-      // self looks like: https://yourcompany.atlassian.net/rest/api/3/issue/12345
-      const m = epicResult.self.match(/^(https:\/\/[^/]+)/)
-      if (m) jiraBase = m[1]
-    }
+    const useExistingEpic = !!epic.existingEpicKey
 
-    results.push({
-      key: epicKey,
-      url: `${jiraBase}/browse/${epicKey}`,
-      summary: epic.title,
-    })
+    if (useExistingEpic) {
+      // Use existing epic — skip creation
+      epicKey = epic.existingEpicKey!
 
-    // 1b. Link epic to source ticket (e.g. CPD-1198) if provided
-    if (sourceTicketKey) {
-      try {
-        await jira.linkIssues(epicKey, sourceTicketKey, 'Idea')
-      } catch (linkErr) {
-        console.warn('Issue link failed (non-fatal):', (linkErr as Error).message)
+      // Resolve jiraBase from a lightweight API call
+      if (!jiraBase) {
+        try {
+          const info = await jira.getIssue(epicKey)
+          // getIssue doesn't return self, so jiraBase might still be empty
+          void info
+        } catch { /* non-fatal */ }
       }
-    }
+    } else {
+      // 1. Create Epic
+      const epicResult = await jira.createEpic(settings.project, epic.title, epic.description)
+      epicKey = epicResult.key
 
-    // 2. Move epic to its sprint (if set)
-    const epicSprintId = epic.sprintId ?? settings.sprintId
-    if (epicSprintId) {
-      try {
-        await jira.moveToSprint(epicSprintId, [epicKey])
-      } catch (sprintErr) {
-        console.warn('Epic sprint assignment failed (non-fatal):', (sprintErr as Error).message)
+      // Resolve the Jira browse base URL
+      // For Basic auth: use jiraBaseUrl from config
+      // For OAuth: extract from the `self` URL returned by the API
+      if (!jiraBase && epicResult.self) {
+        // self looks like: https://yourcompany.atlassian.net/rest/api/3/issue/12345
+        const m = epicResult.self.match(/^(https:\/\/[^/]+)/)
+        if (m) jiraBase = m[1]
+      }
+
+      results.push({
+        key: epicKey,
+        url: `${jiraBase}/browse/${epicKey}`,
+        summary: epic.title,
+      })
+
+      // 1b. Link epic to source ticket (e.g. CPD-1198) if provided
+      if (sourceTicketKey) {
+        try {
+          await jira.linkIssues(epicKey, sourceTicketKey, 'Idea')
+        } catch (linkErr) {
+          console.warn('Issue link failed (non-fatal):', (linkErr as Error).message)
+        }
+      }
+
+      // 2. Move epic to its sprint (if set)
+      const epicSprintId = epic.sprintId ?? settings.sprintId
+      if (epicSprintId) {
+        try {
+          await jira.moveToSprint(epicSprintId, [epicKey])
+        } catch (sprintErr) {
+          console.warn('Epic sprint assignment failed (non-fatal):', (sprintErr as Error).message)
+        }
       }
     }
 
@@ -225,7 +255,8 @@ router.post('/create', async (req, res) => {
     res.json({
       epicKey,
       epicUrl: `${jiraBase}/browse/${epicKey}`,
-      tickets: results.slice(1), // exclude epic from tickets list
+      tickets: useExistingEpic ? results : results.slice(1), // exclude epic from tickets list only when we created it
+      existingEpic: useExistingEpic,
     })
   } catch (e) {
     // Partial failure: return what succeeded + the error

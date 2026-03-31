@@ -60,6 +60,7 @@ export interface Epic {
   title: string
   description: string
   sprintId?: number | null
+  existingEpicKey?: string  // when set, skip epic creation and add tickets to this existing epic
 }
 
 export interface Ticket {
