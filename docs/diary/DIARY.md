@@ -453,3 +453,141 @@ Full feature set:
 6. "Create in Jira" → Epic + tickets created, linked to source CPD ticket, sprint-assigned per-ticket
 7. Sessions auto-save and can be resumed; "+ New session" in header for quick reset
 8. Jira auth via OAuth 2.0 popup
+
+---
+
+## 2026-03-23 (continued) — v1.6: Claude Code export
+
+**Status:** v1.6 — Claude Code task export
+
+### Feature: Export as Claude Code task file
+
+Added the ability to export the generated epic and tickets as a `.md` task file formatted for Claude Code execution. This closes the loop between sprint planning (Sprint Genie) and code implementation (Claude Code).
+
+### User workflow
+
+1. Generate tickets via the normal AI grooming or markdown import flow
+2. Click **Export** (in the ticket builder footer) to download a task file before pushing to Jira, _or_
+3. Click **Export for Claude Code** (on the success screen) to download a task file that includes the real Jira ticket keys and links
+4. Drop the `.md` file into your project and tell Claude Code: _"Work through the tasks in tasks-xxx.md"_
+
+### File format
+
+The exported file (`tasks-<epic-slug>.md`) contains:
+- **Header** with epic title and generation date
+- **Epic section** with description and Jira link (if already submitted)
+- **Instructions for Claude Code** — numbered steps: read, implement, verify, check off
+- **Task list** — each ticket as `### N. [ ] [Type] Title · [KEY](url)` followed by its description
+
+Each task uses the `- [ ]` / `- [x]` convention so Claude Code can track progress inline.
+
+### What changed
+
+**New file: `frontend/src/lib/exportMarkdown.ts`**
+- `buildClaudeCodeMarkdown()` — assembles the markdown string from epic, tickets, and optional Jira result
+- `downloadMarkdown()` — triggers a browser file download as `tasks-<slug>.md`
+- `exportForClaudeCode()` — convenience wrapper that builds and downloads in one call
+- Jira keys are matched to tickets by title (from the `SubmissionResult`) and embedded as inline links when available
+
+**`TicketBuilder.tsx`**
+- New `onExport?: () => void` prop
+- "Export" button (terminal icon) added to the submit bar between "Save draft" and "Create in Jira"
+- Button is only rendered when `onExport` is provided (i.e. when tickets exist)
+
+**`SubmitResult.tsx`**
+- New `onExport?: () => void` prop
+- "Export for Claude Code" button added alongside "Start new session" on the success screen
+- Styled with the accent blue glow to make it a prominent post-submission action
+
+**`App.tsx`**
+- `handleExport` callback: calls `exportForClaudeCode` with current epic, tickets, settings, and result (includes Jira keys if submitted)
+- `onExport` wired into both `TicketBuilder` and `SubmitResult`
+- Shows a "Task file downloaded" toast on success
+
+---
+
+## 2026-04-01 — v1.7: Add tickets to existing Jira epic
+
+**Status:** v1.7 — existing epic support
+
+### Feature: Assign tickets to an existing epic
+
+Previously, every submission created a new epic. Now users can choose to add generated tickets to an existing epic already in Jira, skipping epic creation entirely.
+
+### New flow: Epic choice step
+
+Introduced an intermediate step between ticket generation and the ticket builder. After tickets are generated (via AI grooming or markdown import), users see the **Epic Choice Panel** with two options:
+
+1. **Create new epic** — uses the AI-generated epic as-is (previous behaviour)
+2. **Add to existing epic** — opens a searchable list of project epics; user picks one, then proceeds to the ticket builder with that epic
+
+This step applies to **all flows** — AI grooming and markdown import both go through the epic choice screen.
+
+### Epic search
+
+The epic search supports three query types:
+- **Title search** — `product hub` finds epics with matching titles via JQL `summary ~ "..."`
+- **Full key** — `LH-49192` does a direct issue lookup and verifies it's an Epic
+- **Number only** — `49192` prepends the current project key → looks up `LH-49192`
+
+If a key lookup finds nothing, it falls through to title search rather than returning empty.
+
+### Flow optimisation
+
+The AI is only called **once** during ticket generation. The epic choice is a pure data swap — "Create new" keeps the AI-generated epic, "Use existing" replaces it with the selected Jira epic. No redundant AI calls.
+
+### What changed
+
+**New file: `frontend/src/components/EpicChoicePanel.tsx`**
+- Two-option choice screen ("Create new epic" / "Add to existing epic")
+- Full-panel epic search view with back navigation, search input, and scrollable results list
+- Debounced search (400ms) with loading spinner
+- Auto-loads recent epics on mount
+
+**`shared/src/index.ts`**
+- Added `existingEpicKey?: string` to `Epic` interface — when set, backend skips epic creation
+
+**`backend/src/services/jiraService.ts`**
+- New `searchEpics(projectKey, query)` function
+- Supports direct key lookup (full key or number-only), falls through to JQL title search
+
+**`backend/src/routes/jira.ts`**
+- New `GET /api/jira/epics?projectKey=LH&q=search` endpoint
+- `POST /api/jira/create` updated: when `existingEpicKey` is set, skips epic creation, link to source ticket, and sprint assignment — goes straight to creating child tickets under the existing epic
+- Response includes `existingEpic: boolean` flag so frontend can adjust messaging
+
+**`frontend/src/App.tsx`**
+- `handleDone` now generates tickets first, then shows `EpicChoicePanel` (instead of going straight to building)
+- `handleCreateNewEpic` — dismisses choice panel, enters building with AI-generated epic
+- `handleUseExistingEpic` — swaps epic to the selected one, enters building
+- Markdown import also routes through epic choice panel
+- `choosingEpic` state reset on new session
+
+**`frontend/src/components/TicketBuilder.tsx`**
+- Epic row shows read-only display (key + summary) when `existingEpicKey` is set
+- Editable title/description/sprint only shown for new epics
+
+**`frontend/src/hooks/useSession.ts`**
+- Added `existingEpic?: boolean` to `SubmissionResult`
+
+**`frontend/src/components/SubmitResult.tsx`**
+- Heading changes to "Added to Epic" (instead of "Created in Jira") when using existing epic
+- Count excludes the epic from total ("3 tickets added to LH-123" instead of "4 issues created")
+
+---
+
+## 2026-04-01 (continued) — Plain text ticket descriptions
+
+**Status:** UX fix
+
+### Removed markdown from ticket descriptions
+
+Ticket descriptions were generated with markdown bold syntax (`**Problem:**`, `**Expected outcome:**`, `**Suggested approach:**`). This rendered as raw asterisks in Jira views, making descriptions harder to read.
+
+**What changed:**
+
+**`backend/src/services/claudeService.ts`**
+- `TICKET_GENERATION_SYSTEM` prompt updated: description format changed from `**Problem:** ...` to `Problem: ...` (plain text, no bold markers)
+
+**`frontend/src/hooks/useSession.ts`**
+- `addTicket()` default description template updated to match: plain `Problem:` / `Expected outcome:` / `Suggested approach:` without markdown formatting

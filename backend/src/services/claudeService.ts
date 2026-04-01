@@ -82,7 +82,7 @@ Schema:
       "id": "string — generate a short UUID like t1, t2, t3",
       "type": "Story | Task | Bug — default to Story unless clearly a technical task or bug fix",
       "title": "string — format: [PREFIX] SOURCE_TICKET descriptive title. Example: [API-2] CPD-1198 Add filter criteria API. Always include the source ticket number (e.g. CPD-1198) if one was mentioned in the conversation.",
-      "description": "string — use this exact format:\\n**Problem:** ...\\n**Expected outcome:** ...\\n**Suggested approach:** ..."
+      "description": "string — use this exact format:\\nProblem: ...\\nExpected outcome: ...\\nSuggested approach: ..."
     }
   ]
 }

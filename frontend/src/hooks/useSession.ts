@@ -122,7 +122,7 @@ export function useSession(initialSettings?: Partial<SessionSettings>) {
           id: `t${Date.now()}`,
           type: 'Story' as const,
           title: `${s.settings.prefix} New ticket`,
-          description: '**Problem:** \n**Expected outcome:** \n**Suggested approach:** ',
+          description: 'Problem: \nExpected outcome: \nSuggested approach: ',
           sprintId: s.settings.sprintId,
         },
       ],
